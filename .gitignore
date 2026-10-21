@@ -1,0 +1,6 @@
+vendor/
+__pycache__/
+*.egg-info/
+.venv/
+target/
+.pytest_cache/

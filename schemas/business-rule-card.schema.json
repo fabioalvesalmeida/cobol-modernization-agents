@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/fabioalvesalmeida/cobol-modernization-agents/schemas/business-rule-card.schema.json",
+  "title": "Business Rule Card",
+  "description": "Reviewable, source-traced description of the business behavior of one COBOL program. It is the contract between the analysis agent, the human reviewer and the code-generation agent.",
+  "type": "object",
+  "required": ["program", "summary", "data", "rules", "review"],
+  "properties": {
+    "program": {
+      "type": "object",
+      "required": ["id", "path", "kind"],
+      "properties": {
+        "id": {"type": "string"},
+        "path": {"type": "string"},
+        "kind": {"enum": ["batch", "online (CICS)"]},
+        "source_commit": {"type": "string"}
+      }
+    },
+    "summary": {"type": "string", "minLength": 20},
+    "data": {
+      "type": "object",
+      "properties": {
+        "inputs": {"type": "array", "items": {"$ref": "#/$defs/dataset"}},
+        "outputs": {"type": "array", "items": {"$ref": "#/$defs/dataset"}}
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "statement", "source", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^BR-[A-Z0-9]+-\\d{2,}$"},
+          "title": {"type": "string"},
+          "statement": {"type": "string", "description": "Plain-English rule a business analyst can confirm."},
+          "formula": {"type": "string"},
+          "numeric_semantics": {"type": "string", "description": "Precision, scale, rounding/truncation and overflow behavior."},
+          "source": {
+            "type": "object",
+            "required": ["paragraph", "lines"],
+            "properties": {
+              "paragraph": {"type": "string"},
+              "lines": {"type": "array", "items": {"type": "integer"}, "minItems": 1}
+            }
+          },
+          "edge_cases": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["draft", "approved", "rejected", "not-implemented-in-source"]},
+          "reviewed_by": {"type": "string"}
+        }
+      }
+    },
+    "open_questions": {"type": "array", "items": {"type": "string"}},
+    "review": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["draft", "in-review", "approved"]},
+        "reviewer": {"type": "string"},
+        "date": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "dataset": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string"},
+        "organization": {"type": "string"},
+        "copybook": {"type": "string"},
+        "key": {"type": "string"}
+      }
+    }
+  }
+}

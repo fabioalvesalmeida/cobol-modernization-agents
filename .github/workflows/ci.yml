@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cobol-tools:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[test]'
+      - run: pytest -q
+      - name: Analyze the CardDemo inventory
+        run: |
+          ../scripts/fetch-carddemo.sh ../vendor/carddemo
+          python - <<'EOF'
+          import json
+          from cobol_tools.analysis import list_programs
+          inv = list_programs('../vendor/carddemo/app/cbl')
+          errors = [p for p in inv if 'error' in p]
+          print(json.dumps({"programs": len(inv), "errors": len(errors),
+                            "lines": sum(p.get("source_lines", 0) for p in inv)}))
+          assert not errors, errors
+          EOF
+      - name: Validate rule cards
+        run: |
+          python - <<'EOF'
+          import json, glob
+          from cobol_tools.server import validate_rule_card
+          for p in glob.glob('../examples/*/business-rule-card.json'):
+              r = validate_rule_card(json.load(open(p)))
+              print(p, r)
+              assert r["valid"], r
+          EOF
+
+  java-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/carddemo-cbact04c/java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: mvn -B -q test

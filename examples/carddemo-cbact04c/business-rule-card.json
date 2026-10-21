@@ -1,0 +1,163 @@
+{
+  "program": {
+    "id": "CBACT04C",
+    "path": "app/cbl/CBACT04C.cbl",
+    "kind": "batch",
+    "source_commit": "aws-samples/aws-mainframe-modernization-carddemo@59cc6c2"
+  },
+  "summary": "Monthly interest posting batch. For each transaction-category balance of each account, looks up the disclosure-group interest rate, computes monthly interest, writes one interest transaction, and updates the account balance once per account.",
+  "data": {
+    "inputs": [
+      {
+        "name": "TCATBAL-FILE",
+        "organization": "indexed, sequential access",
+        "copybook": "CVTRA01Y",
+        "key": "TRAN-CAT-KEY (account id, type code, category code)"
+      },
+      {
+        "name": "DISCGRP-FILE",
+        "organization": "indexed, random access",
+        "copybook": "CVTRA02Y",
+        "key": "DIS-GROUP-KEY (group id, type code, category code)"
+      },
+      {
+        "name": "XREF-FILE",
+        "organization": "indexed, random access",
+        "copybook": "CVACT03Y",
+        "key": "card number; alternate key account id"
+      },
+      {
+        "name": "ACCOUNT-FILE",
+        "organization": "indexed, random access",
+        "copybook": "CVACT01Y",
+        "key": "ACCT-ID"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "TRANSACT-FILE",
+        "organization": "sequential",
+        "copybook": "CVTRA05Y"
+      },
+      {
+        "name": "ACCOUNT-FILE",
+        "organization": "indexed (REWRITE)",
+        "copybook": "CVACT01Y"
+      }
+    ]
+  },
+  "rules": [
+    {
+      "id": "BR-CBACT04C-01",
+      "title": "Monthly interest per category balance",
+      "statement": "Monthly interest for a transaction-category balance is the balance times the annual rate (in percent) divided by 1200.",
+      "formula": "monthly_interest = (TRAN-CAT-BAL * DIS-INT-RATE) / 1200",
+      "numeric_semantics": "TRAN-CAT-BAL S9(09)V99; DIS-INT-RATE S9(04)V99; result WS-MONTHLY-INT S9(09)V99. COMPUTE without ROUNDED: the result is truncated (not rounded) to 2 decimals. No ON SIZE ERROR: high-order overflow beyond 9 integer digits is silently truncated.",
+      "source": {
+        "paragraph": "1300-COMPUTE-INTEREST",
+        "lines": [
+          464,
+          465
+        ]
+      },
+      "edge_cases": [
+        "negative balances produce negative interest",
+        "intermediate precision of the division must be confirmed against a compiler run"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "BR-CBACT04C-02",
+      "title": "Interest only when the rate is non-zero",
+      "statement": "Interest (and fees) are computed only when the looked-up rate is different from zero.",
+      "source": {
+        "paragraph": "(MAIN)",
+        "lines": [
+          214,
+          215,
+          216
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "id": "BR-CBACT04C-03",
+      "title": "Rate lookup with DEFAULT group fallback",
+      "statement": "The rate is read by (account group id, transaction type, category). If no record exists (status 23), the lookup is retried with group id 'DEFAULT'. Any other read failure abends the job.",
+      "source": {
+        "paragraph": "1200-GET-INTEREST-RATE",
+        "lines": [
+          416,
+          422,
+          436,
+          437,
+          438
+        ]
+      },
+      "edge_cases": [
+        "missing DEFAULT record abends the job (1200-A-GET-DEFAULT-INT-RATE)"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "BR-CBACT04C-04",
+      "title": "Account balance updated once per account",
+      "statement": "Interest from all category balances of an account is accumulated; when the account changes (and at end of file), the total is added to the current balance and the current-cycle credit and debit are reset to zero.",
+      "formula": "ACCT-CURR-BAL += sum(monthly_interest); ACCT-CURR-CYC-CREDIT = 0; ACCT-CURR-CYC-DEBIT = 0",
+      "numeric_semantics": "WS-TOTAL-INT S9(09)V99 accumulates without ROUNDED or SIZE ERROR.",
+      "source": {
+        "paragraph": "1050-UPDATE-ACCOUNT",
+        "lines": [
+          352,
+          353,
+          354
+        ]
+      },
+      "edge_cases": [
+        "input must be sorted by account id; a repeated account later in the file would be posted twice"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "BR-CBACT04C-05",
+      "title": "One interest transaction per category balance",
+      "statement": "Each computed monthly interest is written as one transaction: id = run date (10 chars) followed by a 6-digit suffix that increments across the whole run (it is not reset per account); type code '01', category code '05', source 'System', description 'Int. for a/c ' followed by the 11-digit account id, amount = the monthly interest.",
+      "source": {
+        "paragraph": "1300-B-WRITE-TX",
+        "lines": [
+          474,
+          476,
+          477,
+          478,
+          479,
+          482,
+          483,
+          484,
+          485,
+          490
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "id": "BR-CBACT04C-06",
+      "title": "Fees",
+      "statement": "Fee computation is a placeholder in the source ('To be implemented') and has no behavior to migrate.",
+      "source": {
+        "paragraph": "1400-COMPUTE-FEES",
+        "lines": [
+          518,
+          520
+        ]
+      },
+      "status": "not-implemented-in-source"
+    }
+  ],
+  "open_questions": [
+    "Confirm truncation and intermediate precision of BR-CBACT04C-01 with a GnuCOBOL golden-master run.",
+    "Merchant, card number and timestamp fields of the interest transaction are mapped in the Quarkus service, not in the core calculator."
+  ],
+  "review": {
+    "status": "draft"
+  }
+}

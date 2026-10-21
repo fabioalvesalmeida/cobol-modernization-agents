@@ -1,0 +1,20 @@
+[project]
+name = "cobol-tools"
+version = "0.1.0"
+description = "MCP server exposing deterministic COBOL analysis to modernization agents"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = ["mcp>=1.2", "jsonschema>=4"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+cobol-tools = "cobol_tools.server:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["cobol_tools"]
