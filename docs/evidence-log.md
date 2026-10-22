@@ -4,10 +4,10 @@ Dated, verifiable progress. Each entry links to the commit, test run or report t
 
 | Date | Milestone | Metric | Proof |
 | --- | --- | --- | --- |
-| 2026-10-21 | `cobol-tools` parses the CardDemo inventory | 31 programs, 15,833 non-comment lines, 0 parse errors | `list_programs` run; commit `TBD` |
-| 2026-10-21 | Copybook layouts validated | 11 of 11 copybooks with a declared record length match exactly | validation script; commit `TBD` |
+| 2026-10-21 | `cobol-tools` parses the CardDemo inventory | 31 programs, 15,833 non-comment lines, 0 parse errors | [commit 9999973](https://github.com/fabioalvesalmeida/cobol-modernization-agents/commit/9999973); [CI run](https://github.com/fabioalvesalmeida/cobol-modernization-agents/actions/runs/39834273732) |
+| 2026-10-21 | Copybook layouts validated | 11 of 11 copybooks with a declared record length match exactly | [commit 9999973](https://github.com/fabioalvesalmeida/cobol-modernization-agents/commit/9999973) |
 | 2026-10-21 | CBACT04C Business Rule Card (draft) | 6 rules, all with cited source lines | `examples/carddemo-cbact04c/business-rule-card.json` |
-| 2026-10-21 | CBACT04C Java core | 6 rules implemented; unit tests for each | CI run `TBD` |
+| 2026-10-21 | CBACT04C Java core | 6 rules implemented; JUnit tests pass on Java 21 | [CI run](https://github.com/fabioalvesalmeida/cobol-modernization-agents/actions/runs/39834273732) |
 
 ## Next milestones
 
